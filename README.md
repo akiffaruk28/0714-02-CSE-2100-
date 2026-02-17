@@ -59,19 +59,20 @@ This document compares **Version 1 (Initial Structure)** and **Version 2 (Refact
 
 ## Version 1 (Old)
 
-smart-backup-utility/
+File-backup-utility/
 │
 ├── src/
-│ ├── main.c
-│ ├── ui.c
-│ ├── backup.c
+│   ├── main.c
+│   ├── ui.c
+│   └── backup.c
 │
 ├── include/
-│ ├── ui.h
-│ ├── backup.h
-│ └── config.h
+│   ├── ui.h
+│   ├── backup.h
+│   └── config.h
 │
 └── README.md
+
 
 ### 🔎 Characteristics
 - Code divided by responsibility
