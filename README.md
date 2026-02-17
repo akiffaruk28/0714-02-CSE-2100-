@@ -1,5 +1,5 @@
 # 📦 Project Structure Comparison  
-## Smart Backup Utility (C with GTK)
+## File Backup Utility (C with GTK)
 
 This document compares **Version 1 (Initial Structure)** and **Version 2 (Refactored Modular Structure)** of the project.
 
