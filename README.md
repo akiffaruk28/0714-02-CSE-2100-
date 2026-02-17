@@ -1,11 +1,11 @@
-# 📦 Project Structure Comparison  
+# Project Structure Comparison  
 ## File Backup Utility (C with GTK)
 
 This document compares **Version 1 (Initial Structure)** and **Version 2 (Refactored Modular Structure)** of the project.
 
 ---
 
-# 🏷️ Version Naming Comparison
+# Version Naming Comparison
 
 | Version | Naming Style | Description |
 |----------|--------------|------------|
@@ -14,12 +14,12 @@ This document compares **Version 1 (Initial Structure)** and **Version 2 (Refact
 
 ---
 
-# 📁 Folder Structure Comparison
+# Folder Structure Comparison
 
-## 🔹 Version 1 – Monolithic Structure
+##  Version 1 – Monolithic Structure
 
 
-### 🔎 Characteristics
+###  Characteristics
 - All code inside `main.c`
 - Hard to maintain
 - Difficult to debug
@@ -28,10 +28,10 @@ This document compares **Version 1 (Initial Structure)** and **Version 2 (Refact
 
 ---
 
-## 🔹 Version 2 – Modular Structure (Refactored)
+##  Version 2 – Modular Structure (Refactored)
 
 
-### 🔎 Characteristics
+###  Characteristics
 - Code divided by responsibility
 - Clean separation of logic
 - Easy to debug and extend
@@ -40,22 +40,22 @@ This document compares **Version 1 (Initial Structure)** and **Version 2 (Refact
 
 ---
 
-# 🔄 Structural Differences Table
+#  Structural Differences Table
 
 | Feature | Version 1 | Version 2 |
 |----------|------------|------------|
 | File Count | 1 | Multiple |
 | UI Logic | Inside `main.c` | `ui.c` |
 | Backup Logic | Inside `main.c` | `backup.c` |
-| Header Files | ❌ No | ✅ Yes |
+| Header Files |  No |  Yes |
 | Maintainability | Low | High |
 | Scalability | Poor | Excellent |
 | Code Readability | Difficult | Clean & Structured |
-| Industry Standard | ❌ | ✅ |
+| Industry Standard | No | Yes |
 
 ---
 
-# 🧠 Architecture Diagram
+#  Architecture Diagram
 
 ## Version 1 (Old)
 
@@ -74,7 +74,7 @@ File-backup-utility/
 └── README.md
 
 
-### 🔎 Characteristics
+###  Characteristics
 - Code divided by responsibility
 - Clean separation of logic
 - Easy to debug and extend
@@ -83,22 +83,22 @@ File-backup-utility/
 
 ---
 
-# 🔄 Structural Differences Table
+#  Structural Differences Table
 
 | Feature | Version 1 | Version 2 |
 |----------|------------|------------|
 | File Count | 1 | Multiple |
 | UI Logic | Inside `main.c` | `ui.c` |
 | Backup Logic | Inside `main.c` | `backup.c` |
-| Header Files | ❌ No | ✅ Yes |
+| Header Files |  No |  Yes |
 | Maintainability | Low | High |
 | Scalability | Poor | Excellent |
 | Code Readability | Difficult | Clean & Structured |
-| Industry Standard | ❌ | ✅ |
+| Industry Standard | No | Yes |
 
 ---
 
-# 🧠 Architecture Diagram
+#  Architecture Diagram
 
 ## Version 1 (Old)
 
@@ -137,7 +137,7 @@ Separated responsibilities with clear modular design.
 
 ---
 
-# 🚀 Why Version 2 is Better
+#  Why Version 2 is Better
 
 - Cleaner Code
 - Easy Team Collaboration
@@ -148,7 +148,7 @@ Separated responsibilities with clear modular design.
 
 ---
 
-# 📌 Conclusion
+#  Conclusion
 
 Version 2 improves:
 - Code organization
