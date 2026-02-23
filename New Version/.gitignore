@@ -1,0 +1,17 @@
+# Compiled output
+build/
+*.exe
+*.o
+
+# Runtime-generated config and log files
+backup_config.txt
+backup_log.txt
+
+# IDE / editor files
+.vscode/
+*.suo
+*.user
+
+# OS files
+Thumbs.db
+.DS_Store
