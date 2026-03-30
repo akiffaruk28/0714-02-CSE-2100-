@@ -1,0 +1,14 @@
+# Build artifacts
+SmartBackup
+SmartBackup.exe
+src/**/*.o
+
+# Runtime files
+backup_config.txt
+backup_log.txt
+
+# IDE / OS
+.vscode/
+*.user
+Thumbs.db
+.DS_Store
