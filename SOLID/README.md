@@ -441,7 +441,7 @@ make clean
 
 ---
 
-## 8. Conclusion
+## 11. Conclusion
 
 The Smart Backup Utility demonstrates all five SOLID design principles working together in a real GTK3 C++ application. Each principle addressed a specific structural problem:
 
