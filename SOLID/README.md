@@ -441,3 +441,21 @@ make clean
 
 ---
 
+## 8. Conclusion
+
+The Smart Backup Utility demonstrates all five SOLID design principles working together in a real GTK3 C++ application. Each principle addressed a specific structural problem:
+
+- **SRP** decomposed what could have been a monolithic backup function into six focused, single-purpose classes — `BackupManager`, `SettingsManager`, `FileOperations`, `MainWindow`, `GtkNotifier`, and the `Utils` namespace — each with exactly one reason to change.
+
+- **OCP** introduced `IBackupStrategy` so that new backup algorithms — zip, cloud, encrypted — can be added as new classes without touching `BackupManager`. `IFileScanner` provides the same extension point for file scanning strategies.
+
+- **LSP** ensured that every concrete class (`GtkNotifier`, `RecursiveFileScanner`, `SimpleFileCopyStrategy`, `MainWindow` as `IBackupObserver`, `SettingsManager` as `ISettingsRepository`) is a genuine, drop-in substitute for its interface. No caller needs `dynamic_cast` or per-subtype branches.
+
+- **ISP** replaced a hypothetical fat interface with five narrow, focused interfaces — `IBackupStrategy`, `IBackupObserver`, `INotifier`, `IFileScanner`, `ISettingsRepository` — so each module receives only the contract it actually uses.
+
+- **DIP** inverted all dependencies so that high-level modules (`BackupManager`, `MainWindow`) depend only on abstractions. `main.cpp` is the sole composition root where concrete objects are wired together. This makes every component independently testable — swap in a `MockBackupStrategy` or `MockNotifier` without changing a single line in `BackupManager` or `MainWindow`.
+
+The result is a codebase where every component is understandable in isolation, every dependency is explicit, and every extension point is open — without modifying any existing, tested code.
+
+---
+
