@@ -1,6 +1,6 @@
 # 🗂️ Smart Backup Utility — SOLID Refactoring Guide
 
-**Course:** Advanced Programming Lab | **Project:** Smart Backup Utility (C++) | **Date:** February 2026
+**Course:** Advanced Programming Lab | **Project:** Smart Backup Utility (C++) | **Date:** March 2026
 
 ---
 
