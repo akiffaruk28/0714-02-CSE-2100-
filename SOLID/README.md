@@ -441,4 +441,3 @@ make clean
 
 ---
 
-*Developed by Bibek Karmoker (ID: 240219) & Akif Faruk Ani (ID: 240223)*
