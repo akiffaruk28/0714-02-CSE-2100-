@@ -10,7 +10,7 @@
 
 #ifdef _WIN32
     #define stat _stat
-    #define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
+    //#define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
     #define mkdir _mkdir
 #endif
 
