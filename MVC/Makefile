@@ -54,7 +54,7 @@ $(TARGET): $(OBJS)
 # Clean build artifacts
 clean:
 	@echo "🧹 Cleaning..."
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 	@echo "✅ Clean complete"
 
 # Run the program
@@ -88,7 +88,7 @@ dirs:
 # For Windows (MSYS2/MinGW)
 ifeq ($(OS),Windows_NT)
     CXXFLAGS += -DWIN32
-    LDFLAGS  += -static-libgcc -static-libstdc++
+    LDFLAGS  += -lole32 -lshell32 -lcomdlg32 -static-libgcc -static-libstdc++
 endif
 
 # For Linux
