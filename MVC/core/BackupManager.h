@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 
 #ifdef _WIN32
+    #include <direct.h>
     #define MKDIR(p) _mkdir(p)
 #else
     #define MKDIR(p) mkdir(p, 0755)
