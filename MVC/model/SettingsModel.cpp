@@ -1,40 +1,32 @@
-#include "ISettingsModel.h"
-#include <vector>
+#include "SettingsModel.h"
 
-class SettingsModel : public ISettingsModel {
-private:
-    BackupSettings m_settings;
-    std::vector<ObserverCallback> m_observers;
-    
-public:
-    BackupSettings getSettings() const override { return m_settings; }
-    
-    void setDestination(const std::string& dest) override {
-        m_settings.destination = dest;
-        for (auto& cb : m_observers) cb();
-    }
-    
-    void setAutoBackup(bool enabled) override {
-        m_settings.autoBackup = enabled;
-        for (auto& cb : m_observers) cb();
-    }
-    
-    void setInterval(int seconds) override {
-        m_settings.interval = seconds;
-        for (auto& cb : m_observers) cb();
-    }
-    
-    void setIncludeSubfolders(bool include) override {
-        m_settings.includeSubfolders = include;
-        for (auto& cb : m_observers) cb();
-    }
-    
-    void setIncludeHidden(bool include) override {
-        m_settings.includeHidden = include;
-        for (auto& cb : m_observers) cb();
-    }
-    
-    void addObserver(ObserverCallback callback) override {
-        m_observers.push_back(callback);
-    }
-};
+BackupSettings SettingsModel::getSettings() const { return m_settings; }
+
+void SettingsModel::setDestination(const std::string& dest) {
+    m_settings.destination = dest;
+    for (auto& cb : m_observers) cb();
+}
+
+void SettingsModel::setAutoBackup(bool enabled) {
+    m_settings.autoBackup = enabled;
+    for (auto& cb : m_observers) cb();
+}
+
+void SettingsModel::setInterval(int seconds) {
+    m_settings.interval = seconds;
+    for (auto& cb : m_observers) cb();
+}
+
+void SettingsModel::setIncludeSubfolders(bool include) {
+    m_settings.includeSubfolders = include;
+    for (auto& cb : m_observers) cb();
+}
+
+void SettingsModel::setIncludeHidden(bool include) {
+    m_settings.includeHidden = include;
+    for (auto& cb : m_observers) cb();
+}
+
+void SettingsModel::addObserver(ObserverCallback callback) {
+    m_observers.push_back(callback);
+}
