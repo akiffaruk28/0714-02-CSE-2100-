@@ -88,7 +88,7 @@ dirs:
 # For Windows (MSYS2/MinGW)
 ifeq ($(OS),Windows_NT)
     CXXFLAGS += -DWIN32
-    LDFLAGS  += -lole32 -lshell32 -lcomdlg32 -static-libgcc -static-libstdc++
+    LDFLAGS  += -lole32 -lshell32 -lcomdlg32
 endif
 
 # For Linux
