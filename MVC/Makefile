@@ -5,7 +5,7 @@
 
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -I. $(shell pkg-config --cflags gtk+-3.0)
-LDFLAGS  := $(shell pkg-config --libs gtk+-3.0)
+LDFLAGS  := $(shell pkg-config --libs gtk+-3.0) -mwindows
 TARGET   := smart_backup_mvc
 
 # ============================================================================
