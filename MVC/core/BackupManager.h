@@ -5,11 +5,15 @@
 #include <ctime>
 #include <fstream>
 #include <sys/stat.h>
+#include <thread>
+#include <functional>
+#include <glib.h>   // FIX 3: g_idle_add — background thread থেকে GTK-কে safely call করতে
 
 #ifdef _WIN32
     #include <direct.h>
     #define MKDIR(p) _mkdir(p)
 #else
+    #include <dirent.h>  // FIX 2: Linux countFiles এর জন্য
     #define MKDIR(p) mkdir(p, 0755)
 #endif
 
@@ -26,6 +30,7 @@ private:
     IBackupStrategy* m_strategy;
     IBackupObserver* m_observer = nullptr;
     bool m_running = false;
+    std::string m_lastLogPath; // FIX: শেষ backup এর log path মনে রাখে
 
     std::string joinPath(const std::string& a, const std::string& b) {
         if (a.empty()) return b;
@@ -49,11 +54,35 @@ private:
         return buf;
     }
 
+    // nested directory তৈরি করে (যেমন C:\Users\HP\Backups\Backup_xxx)
     void createDir(const std::string& path) {
         struct stat st;
-        if (stat(path.c_str(), &st) != 0) {
-            MKDIR(path.c_str());
+        if (stat(path.c_str(), &st) == 0) return; // already exists
+
+#ifdef _WIN32
+        // Parent directories আগে তৈরি করো
+        std::string tmp = path;
+        for (size_t i = 1; i < tmp.size(); i++) {
+            if (tmp[i] == '\\' || tmp[i] == '/') {
+                tmp[i] = '\0';
+                struct stat s;
+                if (stat(tmp.c_str(), &s) != 0) _mkdir(tmp.c_str());
+                tmp[i] = '\\';
+            }
         }
+        _mkdir(path.c_str());
+#else
+        std::string tmp = path;
+        for (size_t i = 1; i < tmp.size(); i++) {
+            if (tmp[i] == '/') {
+                tmp[i] = '\0';
+                struct stat s;
+                if (stat(tmp.c_str(), &s) != 0) mkdir(tmp.c_str(), 0755);
+                tmp[i] = '/';
+            }
+        }
+        mkdir(path.c_str(), 0755);
+#endif
     }
 
     // File নাকি Folder সেটা detect করে
@@ -63,7 +92,7 @@ private:
         return S_ISDIR(st.st_mode);
     }
 
-    // Folder এর ভেতরে কতটা file আছে count করে (progress এর জন্য)
+    // FIX 2: Folder এর ভেতরে কতটা file আছে count করে — এখন Linux ও Windows দুটোতেই কাজ করবে
     int countFiles(const std::string& path) {
         if (!isDirectory(path)) return 1;
         int count = 0;
@@ -83,6 +112,21 @@ private:
                 count++;
         } while (FindNextFileA(hFind, &findData));
         FindClose(hFind);
+#else
+        DIR* dir = opendir(path.c_str());
+        if (!dir) return 0;
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr) {
+            std::string name = entry->d_name;
+            if (name == "." || name == "..") continue;
+            std::string fullPath = path + "/" + name;
+            struct stat st;
+            if (stat(fullPath.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+                count += countFiles(fullPath);
+            else
+                count++;
+        }
+        closedir(dir);
 #endif
         return count;
     }
@@ -90,16 +134,33 @@ private:
 public:
     BackupManager(IBackupStrategy* strategy) : m_strategy(strategy) {}
     void setObserver(IBackupObserver* observer) { m_observer = observer; }
+    void setStrategy(IBackupStrategy* strategy) { m_strategy = strategy; }  // runtime swap
     bool isRunning() const { return m_running; }
+    std::string getLastLogPath() const { return m_lastLogPath; }
 
-    bool runBackup(const std::vector<std::string>& items, const std::string& destination) {
+    // FIX 1: Background thread-এ চালাও, নইলে GTK main loop block হয়ে crash করে
+    bool runBackup(const std::vector<std::string>& items, const std::string& destination,
+                   bool includeHidden = false, const std::string& customName = "") {
         if (m_running || items.empty()) return false;
         m_running = true;
 
-        std::string backupDir = joinPath(destination, "Backup_" + timestamp());
+        std::thread([this, items, destination, includeHidden, customName]() {
+            runBackupInternal(items, destination, includeHidden, customName);
+        }).detach();
+
+        return true;
+    }
+
+private:
+    bool runBackupInternal(const std::vector<std::string>& items, const std::string& destination,
+                           bool includeHidden, const std::string& customName) {
+        // Custom নাম দেওয়া থাকলে সেটা ব্যবহার করো, না থাকলে timestamp
+        std::string folderName = customName.empty() ? ("Backup_" + timestamp()) : customName;
+        std::string backupDir  = joinPath(destination, folderName);
         createDir(backupDir);
 
         std::string logPath = joinPath(backupDir, "backup_log.txt");
+        m_lastLogPath = logPath; // FIX: log path সেভ করো
         std::ofstream log(logPath, std::ios::app);
 
         time_t now = time(nullptr);
@@ -114,12 +175,23 @@ public:
             std::string name = baseName(items[i]);
             std::string dest = joinPath(backupDir, name);
 
-            if (m_observer) m_observer->onProgress(i + 1, total, name);
+            // FIX 3: GTK is not thread-safe — observer calls must run on the GTK main thread
+            if (m_observer) {
+                int cur = i + 1;
+                IBackupObserver* obs = m_observer;
+                std::string* nameCopy = new std::string(name);
+                g_idle_add([](gpointer data) -> gboolean {
+                    auto* p = static_cast<std::tuple<IBackupObserver*, int, int, std::string*>*>(data);
+                    std::get<0>(*p)->onProgress(std::get<1>(*p), std::get<2>(*p), *std::get<3>(*p));
+                    delete std::get<3>(*p);
+                    delete p;
+                    return G_SOURCE_REMOVE;
+                }, new std::tuple<IBackupObserver*, int, int, std::string*>(obs, cur, total, nameCopy));
+            }
 
             if (isDirectory(items[i])) {
-                // ── Folder → recursive copy ──
                 log << "[FOLDER] " << items[i] << "\n";
-                if (m_strategy->copyFolder(items[i], dest)) {
+                if (m_strategy->copyFolder(items[i], dest, includeHidden)) {
                     success++;
                     log << "[OK] Folder backed up: " << name << "\n";
                 } else {
@@ -139,8 +211,18 @@ public:
         log << "Backup complete: " << success << "/" << total << " items\n";
         log.close();
 
-        if (m_observer) m_observer->onComplete(success, total);
+        // FIX 3: onComplete-ও GTK main thread-এ dispatch করো
+        if (m_observer) {
+            IBackupObserver* obs = m_observer;
+            int s = success, t = total;
+            g_idle_add([](gpointer data) -> gboolean {
+                auto* p = static_cast<std::pair<IBackupObserver*, std::pair<int,int>>*>(data);
+                p->first->onComplete(p->second.first, p->second.second);
+                delete p;
+                return G_SOURCE_REMOVE;
+            }, new std::pair<IBackupObserver*, std::pair<int,int>>(obs, {s, t}));
+        }
         m_running = false;
         return success == total;
     }
-};
+}; // class BackupManager
