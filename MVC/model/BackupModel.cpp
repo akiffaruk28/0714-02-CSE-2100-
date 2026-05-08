@@ -30,7 +30,9 @@ bool BackupModel::isBackupRunning() const { return m_backupRunning; }
 
 void BackupModel::setBackupRunning(bool running) {
     m_backupRunning = running;
-    if (!running) m_currentProgress = 0;
+    // FIX 6: running=false হলে progress এখানে reset করবে না।
+    // onComplete() আগে fire হয়, তারপর controller resetResults() ডাকবে।
+    // আগে এখানে reset হওয়ায় onComplete-এ progress দেখা যেত না।
     for (auto& cb : m_observers) cb();
 }
 
