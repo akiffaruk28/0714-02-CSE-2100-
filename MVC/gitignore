@@ -1,0 +1,17 @@
+# Compiled object files
+*.o
+
+# Executable
+*.exe
+smart_backup_mvc
+
+# Build artifacts
+installer_build/
+installer/Output/
+
+# Settings file
+smart_backup.conf
+
+# IDE
+.vscode/
+.idea/
