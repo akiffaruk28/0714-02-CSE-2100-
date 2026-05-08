@@ -12,7 +12,9 @@ public:
     virtual void updateFileList(const std::vector<std::string>& files) = 0;
     virtual void showNotification(const std::string& title, const std::string& message) = 0;
     virtual void showError(const std::string& error) = 0;
+    virtual void showLogDialog(const std::string& title, const std::string& content) = 0;
     virtual void setBackupButtonEnabled(bool enabled) = 0;
+    virtual void updateCountdown(const std::string& countdownText) = 0;
     virtual std::string getSelectedItem() = 0;
     
     using FileSelectedCallback = std::function<void(const std::vector<std::string>&, bool)>;
