@@ -4,6 +4,11 @@
 #include <functional>
 #include "../model/ISettingsModel.h"
 
+#ifdef _WIN32
+  #include <windows.h>
+  #include <shlobj.h>
+#endif
+
 // Windows-safe path existence check — avoids struct stat conflicts inside lambdas
 #ifdef _WIN32
   #include <sys/stat.h>
@@ -93,22 +98,55 @@ public:
         gtk_widget_set_hexpand(destEntry, TRUE);
         gtk_grid_attach(GTK_GRID(tab1Grid), destEntry, 1, row, 1, 1);
 
+        // Pack browse button data: entry + parent dialog pointer
+        struct BrowseData { GtkWidget* entry; GtkWidget* parentDialog; };
+        BrowseData* bd = new BrowseData{destEntry, dialog};
+
         GtkWidget* browseBtn = gtk_button_new_with_label("Browse…");
         gtk_grid_attach(GTK_GRID(tab1Grid), browseBtn, 2, row, 1, 1);
         g_signal_connect(browseBtn, "clicked",
             G_CALLBACK(+[](GtkWidget*, gpointer data) {
-                GtkWidget* entry = static_cast<GtkWidget*>(data);
+                BrowseData* bd = static_cast<BrowseData*>(data);
+
+#ifdef _WIN32
+                // Use Windows native folder picker via SHBrowseForFolder
+                BROWSEINFOW bi = {};
+                bi.hwndOwner = nullptr;
+                bi.lpszTitle = L"Select Backup Destination";
+                bi.ulFlags   = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_USENEWUI;
+                LPITEMIDLIST pidl = SHBrowseForFolderW(&bi);
+                if (pidl) {
+                    wchar_t path[MAX_PATH] = {};
+                    if (SHGetPathFromIDListW(pidl, path)) {
+                        // Convert wchar_t to UTF-8 for GTK
+                        gchar* utf8 = g_utf16_to_utf8(
+                            reinterpret_cast<const gunichar2*>(path), -1,
+                            nullptr, nullptr, nullptr);
+                        if (utf8) {
+                            gtk_entry_set_text(GTK_ENTRY(bd->entry), utf8);
+                            g_free(utf8);
+                        }
+                    }
+                    CoTaskMemFree(pidl);
+                }
+#else
                 GtkWidget* chooser = gtk_file_chooser_dialog_new(
-                    "Select Backup Destination", nullptr,
+                    "Select Backup Destination",
+                    GTK_WINDOW(bd->parentDialog),
                     GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
                     "_Cancel", GTK_RESPONSE_CANCEL,
                     "_Select", GTK_RESPONSE_ACCEPT, nullptr);
                 if (gtk_dialog_run(GTK_DIALOG(chooser)) == GTK_RESPONSE_ACCEPT) {
                     char* folder = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(chooser));
-                    if (folder) { gtk_entry_set_text(GTK_ENTRY(entry), folder); g_free(folder); }
+                    if (folder) { gtk_entry_set_text(GTK_ENTRY(bd->entry), folder); g_free(folder); }
                 }
                 gtk_widget_destroy(chooser);
-            }), destEntry);
+#endif
+            }), bd);
+
+        // Free BrowseData when dialog is destroyed
+        g_signal_connect(dialog, "destroy",
+            G_CALLBACK(+[](GtkWidget*, gpointer data) { delete static_cast<BrowseData*>(data); }), bd);
         row++;
 
         // — Destination warning label —
