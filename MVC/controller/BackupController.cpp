@@ -27,11 +27,11 @@ static std::string fmtCountdown(int secs) {
 // ── Constructor / Destructor ──────────────────────────────────────────────────
 
 BackupController::BackupController(IBackupModel* model, IMainView* view,
-                                   BackupManager* backupMgr, IBackupStrategy*,
+                                   BackupManager* backupMgr,
                                    ISettingsModel* settingsModel,
                                    const std::string& settingsPath)
     : m_model(model), m_view(view), m_backupManager(backupMgr),
-      m_strategy(nullptr), m_settingsModel(settingsModel),
+      m_settingsModel(settingsModel),
       m_settingsPath(settingsPath)
 {
     setupCallbacks();
@@ -96,30 +96,34 @@ void BackupController::stopAutoBackupTimer() {
 }
 
 void BackupController::autoBackupLoop() {
-    // If a retry is pending from a previous failure, handle it first (60 s delay)
-    if (m_retryPending.load()) {
-        m_retryPending.store(false);
-        for (int i = 60; i > 0 && !m_stopTimer.load(); --i) {
-            int rem = i;
-            struct Ctx { BackupController* c; int r; };
-            auto* ctx = new Ctx{this, rem};
-            g_idle_add([](gpointer d) -> gboolean {
-                auto* c = static_cast<Ctx*>(d);
-                c->c->m_view->updateCountdown("Retry in " + std::to_string(c->r) + "s…");
-                delete c; return G_SOURCE_REMOVE;
-            }, ctx);
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-        if (!m_stopTimer.load()) triggerBackup();
-    }
-
     while (!m_stopTimer.load()) {
+
+        // ── Retry wait: if previous backup failed, wait 60s before retrying ──
+        if (m_retryPending.load()) {
+            m_retryPending.store(false);
+            for (int i = 60; i > 0 && !m_stopTimer.load(); --i) {
+                int rem = i;
+                struct Ctx { BackupController* c; int r; };
+                auto* ctx = new Ctx{this, rem};
+                g_idle_add([](gpointer d) -> gboolean {
+                    auto* c = static_cast<Ctx*>(d);
+                    c->c->m_view->updateCountdown("Retry in " + std::to_string(c->r) + "s\u2026");
+                    delete c; return G_SOURCE_REMOVE;
+                }, ctx);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+            if (m_stopTimer.load()) break;
+            triggerBackup();
+            // After retry, loop back to top (retryPending may be set again if it fails)
+            continue;
+        }
+
+        // ── Normal interval countdown ─────────────────────────────────────────
         int intervalSec = m_settingsModel->getSettings().interval;
         if (intervalSec <= 0) intervalSec = 300;
 
         m_secondsUntilNext.store(intervalSec);
 
-        // Countdown tick
         while (m_secondsUntilNext.load() > 0 && !m_stopTimer.load()) {
             int remaining = m_secondsUntilNext.load();
 
@@ -140,13 +144,12 @@ void BackupController::autoBackupLoop() {
 
         triggerBackup();
 
-        // If the backup failed and retryOnFailure is set, re-enter loop immediately
-        // which will hit the retry block at the top on the next iteration.
+        // If backup failed and retryOnFailure is set, next loop iteration
+        // will enter the retry block at the top.
         if (m_lastBackupFailed.load() &&
             m_settingsModel->getSettings().retryOnFailure) {
             m_retryPending.store(true);
             m_lastBackupFailed.store(false);
-            // restart from the top — retry block handles the 60s wait
         }
     }
     m_autoBackupRunning.store(false);
@@ -174,9 +177,9 @@ void BackupController::triggerBackup() {
         std::string folderName = ctrl->makeBackupFolderName();
         ctrl->m_backupManager->runBackup(
             ctrl->m_model->getItems(), s.destination,
-            s.includeHidden, folderName);
+            s.includeHidden, s.includeSubfolders, folderName);
+        // NOTE: pruneOldBackups is now called in onComplete() to avoid race condition
 
-        ctrl->pruneOldBackups(s.destination, s.maxCopies);
         return G_SOURCE_REMOVE;
     }, this);
 }
@@ -282,9 +285,11 @@ void BackupController::handleStartBackup() {
     m_model->setBackupRunning(true);
     m_incrementalStrategy.resetCounters();
     m_backupManager->setStrategy(activeStrategy());
+    BackupSettings s = m_settingsModel->getSettings();
     m_backupManager->runBackup(m_model->getItems(), dest,
-                               m_settingsModel->getSettings().includeHidden,
+                               s.includeHidden, s.includeSubfolders,
                                makeBackupFolderName());
+    // NOTE: pruneOldBackups is called in onComplete() to avoid race condition
 }
 
 void BackupController::handleViewLog() {
@@ -307,8 +312,11 @@ void BackupController::onComplete(int success, int total) {
     m_view->setBackupButtonEnabled(true);
     m_lastBackupFailed.store(false);
 
-    // If incremental, show skip stats in the status bar
+    // Prune old backups AFTER the new one is complete (fixes race condition)
     BackupSettings s = m_settingsModel->getSettings();
+    pruneOldBackups(s.destination, s.maxCopies);
+
+    // If incremental, show skip stats in the status bar
     std::string msg;
     if (s.strategy == BackupStrategy::Incremental) {
         msg = "Backup complete: " + std::to_string(m_incrementalStrategy.copied) +
