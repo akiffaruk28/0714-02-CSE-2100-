@@ -17,7 +17,6 @@ private:
     IBackupModel*    m_model;
     IMainView*       m_view;
     BackupManager*   m_backupManager;
-    IBackupStrategy* m_strategy;        // current active strategy (may be swapped)
     ISettingsModel*  m_settingsModel;
     std::string      m_settingsPath;
 
@@ -54,7 +53,7 @@ private:
 
 public:
     BackupController(IBackupModel* model, IMainView* view,
-                     BackupManager* backupMgr, IBackupStrategy* strategy,
+                     BackupManager* backupMgr,
                      ISettingsModel* settingsModel,
                      const std::string& settingsPath = "");
     ~BackupController();

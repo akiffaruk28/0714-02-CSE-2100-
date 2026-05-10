@@ -20,7 +20,8 @@ void SettingsController::showSettingsDialog() {
         [this](const std::string& dest, const std::string& backupName,
                bool autoBackup, int interval, int maxCopies,
                bool subfolders, bool hidden,
-               BackupStrategy strategy, bool retryOnFailure, bool backupOnAppStart)
+               BackupStrategy strategy, bool retryOnFailure, bool backupOnAppStart,
+               bool showNotifications)
         {
             m_model->setDestination(dest);
             m_model->setBackupName(backupName);
@@ -32,6 +33,7 @@ void SettingsController::showSettingsDialog() {
             m_model->setStrategy(strategy);
             m_model->setRetryOnFailure(retryOnFailure);
             m_model->setBackupOnAppStart(backupOnAppStart);
+            m_model->setShowNotifications(showNotifications);
 
             if (autoBackup) {
                 int mins = interval / 60;
