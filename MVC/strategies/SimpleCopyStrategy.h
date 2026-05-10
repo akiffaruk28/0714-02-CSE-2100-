@@ -17,7 +17,8 @@ class IBackupStrategy {
 public:
     virtual ~IBackupStrategy() = default;
     virtual bool copyFile(const std::string& src, const std::string& dest) = 0;
-    virtual bool copyFolder(const std::string& src, const std::string& dest, bool includeHidden = false) = 0;
+    virtual bool copyFolder(const std::string& src, const std::string& dest,
+                            bool includeHidden = false, bool includeSubfolders = true) = 0;
     virtual std::string getStrategyName() const = 0;
 };
 
@@ -31,7 +32,8 @@ public:
         return out.good();
     }
 
-    bool copyFolder(const std::string& src, const std::string& dest, bool includeHidden = false) override {
+    bool copyFolder(const std::string& src, const std::string& dest,
+                    bool includeHidden = false, bool includeSubfolders = true) override {
         createDir(dest);
 
 #ifdef _WIN32
@@ -55,7 +57,9 @@ public:
             std::string destPath = dest + "\\" + name;
 
             if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-                if (!copyFolder(srcPath, destPath, includeHidden)) success = false;
+                if (includeSubfolders) {
+                    if (!copyFolder(srcPath, destPath, includeHidden, includeSubfolders)) success = false;
+                }
             } else {
                 if (!copyFile(srcPath, destPath)) success = false;
             }
@@ -82,7 +86,9 @@ public:
 
             struct stat st;
             if (stat(srcPath.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
-                if (!copyFolder(srcPath, destPath, includeHidden)) success = false;
+                if (includeSubfolders) {
+                    if (!copyFolder(srcPath, destPath, includeHidden, includeSubfolders)) success = false;
+                }
             } else {
                 if (!copyFile(srcPath, destPath)) success = false;
             }
