@@ -43,7 +43,8 @@ public:
         bool hidden,
         BackupStrategy strategy,
         bool retryOnFailure,
-        bool backupOnAppStart)>;
+        bool backupOnAppStart,
+        bool showNotifications)>;
 
     static void show(GtkWindow* parent,
                      const BackupSettings& current,
@@ -254,6 +255,14 @@ public:
             "If a backup fails, automatically retry once after 60 seconds.");
         gtk_grid_attach(GTK_GRID(tab2Grid), retrySw, 1, row++, 1, 1);
 
+        addLabel(tab2Grid, "Show Notifications:", row);
+        GtkWidget* notifSw = gtk_switch_new();
+        gtk_switch_set_active(GTK_SWITCH(notifSw), current.showNotifications);
+        gtk_widget_set_halign(notifSw, GTK_ALIGN_START);
+        gtk_widget_set_tooltip_text(notifSw,
+            "Show a desktop notification when a backup completes.");
+        gtk_grid_attach(GTK_GRID(tab2Grid), notifSw, 1, row++, 1, 1);
+
         gtk_notebook_append_page(GTK_NOTEBOOK(notebook), tab2Grid,
                                  gtk_label_new("Auto Backup"));
 
@@ -322,7 +331,8 @@ public:
                 gtk_switch_get_active(GTK_SWITCH(hiddenSw)),
                 strat,
                 gtk_switch_get_active(GTK_SWITCH(retrySw)),
-                gtk_switch_get_active(GTK_SWITCH(startSw))
+                gtk_switch_get_active(GTK_SWITCH(startSw)),
+                gtk_switch_get_active(GTK_SWITCH(notifSw))
             );
         }
         gtk_widget_destroy(dialog);
