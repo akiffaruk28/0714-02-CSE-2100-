@@ -23,7 +23,6 @@ struct BackupSettings {
     BackupStrategy strategy      = BackupStrategy::FullCopy;
     bool retryOnFailure          = true;   // retry once automatically if backup fails
     bool backupOnAppStart        = false;  // run an immediate backup when app launches
-    int  missedBackupGraceSec    = 60;     // if system was suspended, catch up within this window
 };
 
 // ── ISettingsModel ─────────────────────────────────────────────────────────────
