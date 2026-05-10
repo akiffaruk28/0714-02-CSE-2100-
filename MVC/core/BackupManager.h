@@ -140,12 +140,13 @@ public:
 
     // FIX 1: Background thread-এ চালাও, নইলে GTK main loop block হয়ে crash করে
     bool runBackup(const std::vector<std::string>& items, const std::string& destination,
-                   bool includeHidden = false, const std::string& customName = "") {
+                   bool includeHidden = false, bool includeSubfolders = true,
+                   const std::string& customName = "") {
         if (m_running || items.empty()) return false;
         m_running = true;
 
-        std::thread([this, items, destination, includeHidden, customName]() {
-            runBackupInternal(items, destination, includeHidden, customName);
+        std::thread([this, items, destination, includeHidden, includeSubfolders, customName]() {
+            runBackupInternal(items, destination, includeHidden, includeSubfolders, customName);
         }).detach();
 
         return true;
@@ -153,7 +154,7 @@ public:
 
 private:
     bool runBackupInternal(const std::vector<std::string>& items, const std::string& destination,
-                           bool includeHidden, const std::string& customName) {
+                           bool includeHidden, bool includeSubfolders, const std::string& customName) {
         // Custom নাম দেওয়া থাকলে সেটা ব্যবহার করো, না থাকলে timestamp
         std::string folderName = customName.empty() ? ("Backup_" + timestamp()) : customName;
         std::string backupDir  = joinPath(destination, folderName);
@@ -191,7 +192,7 @@ private:
 
             if (isDirectory(items[i])) {
                 log << "[FOLDER] " << items[i] << "\n";
-                if (m_strategy->copyFolder(items[i], dest, includeHidden)) {
+                if (m_strategy->copyFolder(items[i], dest, includeHidden, includeSubfolders)) {
                     success++;
                     log << "[OK] Folder backed up: " << name << "\n";
                 } else {
